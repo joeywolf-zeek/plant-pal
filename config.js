@@ -11,7 +11,7 @@ window.APP_CONFIG = {
 
   // Get a free key at https://my.plantnet.org/ (see README).
   // Leave empty to disable photo identification — typing a name still works.
-  plantnetApiKey: "",
+  plantnetApiKey: "2b10tCDMnPnIVIkSW1crXAJuO",
 
   plantnetEndpoint: "https://my-api.plantnet.org/v2/identify/all",
 
