@@ -25,8 +25,9 @@ export function findCare(q) {
   let hit = byName("species", sci);
   if (hit) return hit;
 
-  // Typed text: exact common name or scientific name, any rank (species first)
-  if (text) {
+  // Typed text: exact common name or scientific name, any rank (species first).
+  // Skipped when we have a scientific name — common names are ambiguous ("money tree").
+  if (text && !sci) {
     hit = PLANTS.find((p) => norm(p.name) === text || (p.synonyms || []).some((s) => norm(s) === text))
       || PLANTS.find((p) => p.common.some((c) => norm(c) === text));
     if (hit) return hit;
@@ -45,10 +46,15 @@ export function findCare(q) {
   hit = byName("family", family);
   if (hit) return hit;
 
-  // Last try for typed text: partial common-name match ("my pothos" → pothos)
-  if (text) {
-    hit = PLANTS.find((p) => p.common.some((c) => text.includes(norm(c)) && norm(c).length > 3));
-    if (hit) return hit;
+  // Last try for typed text: partial common-name match ("my pothos" → pothos).
+  // Longest match wins, so "chinese money plant" beats "money plant".
+  if (text && !sci) {
+    let best = null, bestLen = 3;
+    for (const p of PLANTS) for (const c of p.common) {
+      const n = norm(c);
+      if (n.length > bestLen && text.includes(n)) { best = p; bestLen = n.length; }
+    }
+    if (best) return best;
   }
 
   // 4. Default

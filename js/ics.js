@@ -3,13 +3,23 @@
 
 const esc = (s) => String(s).replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
 
+// Fold at 75 *bytes* (not characters) so emoji / accented names stay valid,
+// without splitting a multi-byte character across lines.
+const enc = new TextEncoder();
 function fold(line) {
   const out = [];
-  while (line.length > 74) {
-    out.push(line.slice(0, 74));
-    line = " " + line.slice(74);
+  let cur = "", bytes = 0;
+  for (const ch of line) {
+    const n = enc.encode(ch).length;
+    if (bytes + n > 75) {
+      out.push(cur);
+      cur = " "; // continuation lines start with a space
+      bytes = 1;
+    }
+    cur += ch;
+    bytes += n;
   }
-  out.push(line);
+  out.push(cur);
   return out.join("\r\n");
 }
 

@@ -32,6 +32,12 @@ function persist() {
   return ok;
 }
 
+// Ask the browser not to evict our data under storage pressure (Chrome/Android honor this;
+// on iPhone, adding the app to the Home Screen is what protects it).
+function requestPersistentStorage() {
+  navigator.storage?.persist?.().catch(() => {});
+}
+
 let toastTimer;
 function toast(msg) {
   const el = $("#toast");
@@ -181,14 +187,25 @@ const intervalInput = $("#interval");
 let draft; // state for the plant being added
 
 function resetDraft() {
+  draft?.request?.abort(); // cancel an identification still in flight
   if (draft?.previewUrl) URL.revokeObjectURL(draft.previewUrl);
-  draft = { upload: null, thumb: null, previewUrl: null, matches: [], chosen: null, care: null, suggestion: null, intervalEdited: false };
+  draft = {
+    upload: null, thumb: null, previewUrl: null, request: null,
+    matches: [], chosen: null, care: null, suggestion: null, intervalEdited: false,
+  };
 }
 
 function setStatus(msg, isError = false) {
   const el = $("#id-status");
   el.textContent = msg;
   el.classList.toggle("error", isError);
+}
+
+function clearMatches() {
+  draft.matches = [];
+  draft.chosen = null;
+  $("#matches").hidden = true;
+  $("#match-list").replaceChildren();
 }
 
 function openAdd() {
@@ -198,8 +215,7 @@ function openAdd() {
   $("#photo-preview").removeAttribute("src");
   $("#photo-placeholder").hidden = false;
   $("#identify-btn").hidden = true;
-  $("#matches").hidden = true;
-  $("#match-list").replaceChildren();
+  clearMatches();
   setStatus("");
   const lw = $("#last-watered");
   lw.value = lw.max = today();
@@ -211,10 +227,12 @@ $("#add-btn").addEventListener("click", openAdd);
 dialog.addEventListener("click", (e) => { if (e.target.closest("[data-close]")) dialog.close(); });
 dialog.addEventListener("close", resetDraft);
 
-// Photo picked → resize → identify
-$("#photo-input").addEventListener("change", async (e) => {
+// Photo picked (camera or library) → resize → identify
+async function onPhotoPicked(e) {
   const file = e.target.files[0];
+  e.target.value = ""; // so picking the same file again still fires "change"
   if (!file) return;
+  draft.request?.abort(); // a new photo replaces any identification in progress
   setStatus("Preparing photo…");
   try {
     const { upload, thumb } = await processPhoto(file);
@@ -224,37 +242,50 @@ $("#photo-input").addEventListener("change", async (e) => {
     preview.src = draft.previewUrl;
     preview.hidden = false;
     $("#photo-placeholder").hidden = true;
+    clearMatches();
+    updateSchedule();
 
-    if (config.plantnetApiKey) {
-      $("#identify-btn").hidden = false;
-      runIdentify();
-    } else {
-      setStatus("Photo added. (Photo ID is off — no API key in config.js.) Type the plant's name below.");
-    }
+    if (config.plantnetApiKey) runIdentify();
+    else setStatus("Photo added. (Photo ID is off — no API key in config.js.) Type the plant's name below.");
   } catch (err) {
     setStatus(err.message, true);
   }
-});
+}
+$("#photo-input").addEventListener("change", onPhotoPicked);
+$("#library-input").addEventListener("change", onPhotoPicked);
 
 $("#identify-btn").addEventListener("click", runIdentify);
 
+// Each photo is identified once. The button only appears to retry after an error,
+// so the daily Pl@ntNet quota isn't spent on repeat lookups of the same photo.
 async function runIdentify() {
   if (!draft.upload) return;
   const btn = $("#identify-btn");
-  btn.disabled = true;
+  const current = draft;
+  current.request?.abort();
+  const request = (current.request = new AbortController());
+  btn.hidden = true;
   setStatus("Identifying… 🌿");
   try {
-    const results = await identifyPlant(draft.upload, {
+    const { matches, remaining } = await identifyPlant(current.upload, {
       apiKey: config.plantnetApiKey,
       endpoint: config.plantnetEndpoint,
+      signal: request.signal,
     });
-    if (!results.length) throw new Error("No match found. Type the name instead.");
-    showMatches(results);
-    setStatus(results[0].score < 0.2 ? "Low confidence — double-check, or type the name yourself." : "");
+    if (draft !== current || request.signal.aborted) return; // sheet closed or new photo
+    if (!matches.length) throw new Error("No plant recognized. Type the name instead.");
+    showMatches(matches);
+    const notes = [];
+    if (matches[0].score < 0.2) notes.push("Low confidence — double-check, or type the name yourself.");
+    if (remaining !== null && remaining < 50) notes.push(`${remaining} photo IDs left today.`);
+    setStatus(notes.join(" "));
   } catch (err) {
+    if (draft !== current || request.signal.aborted) return;
     setStatus(err.message, true);
+    btn.textContent = "🔍 Try again";
+    btn.hidden = false;
   } finally {
-    btn.disabled = false;
+    if (current.request === request) current.request = null;
   }
 }
 
@@ -275,6 +306,16 @@ function showMatches(results) {
   none.innerHTML = `<input type="radio" name="match" value="none"><span class="name">None of these — I'll type it</span>`;
   list.replaceChildren(...options, none);
   $("#matches").hidden = false;
+  if (results[0].score >= 0.5 && !nameInput.value.trim()) {
+    $("input", options[0]).checked = true;
+    pickMatch(0);
+  }
+}
+
+function pickMatch(i) {
+  draft.chosen = draft.matches[i];
+  nameInput.value = draft.chosen.common ? titleCase(draft.chosen.common) : draft.chosen.scientific;
+  updateSchedule();
 }
 
 $("#match-list").addEventListener("change", (e) => {
@@ -283,11 +324,10 @@ $("#match-list").addEventListener("change", (e) => {
     draft.chosen = null;
     nameInput.value = "";
     nameInput.focus();
+    updateSchedule();
   } else {
-    draft.chosen = draft.matches[Number(v)];
-    nameInput.value = draft.chosen.common ? titleCase(draft.chosen.common) : draft.chosen.scientific;
+    pickMatch(Number(v));
   }
-  updateSchedule();
 });
 
 nameInput.addEventListener("input", () => {
@@ -320,7 +360,7 @@ function updateSchedule() {
   const name = nameInput.value.trim();
   const c = draft.chosen;
   const care = c
-    ? findCare({ scientific: c.scientific, genus: c.genus, family: c.family, text: name })
+    ? findCare({ scientific: c.scientific, genus: c.genus, family: c.family })
     : findCare({ text: name });
   const s = suggestInterval(care, form.elements.light.value, form.elements.pot.value, new Date(), config.hemisphere);
   draft.care = care;
@@ -383,7 +423,12 @@ form.addEventListener("submit", (e) => {
   };
 
   plants.push(plant);
-  if (!persist()) { plants.pop(); return; }
+  if (!savePlants(plants)) {
+    plants.pop();
+    setStatus("Couldn't save — this device's storage is full. Export a backup and remove some plants.", true);
+    return;
+  }
+  requestPersistentStorage();
   dialog.close();
   render();
   toast(`🌱 Added ${displayName(plant)}. Next water ${formatDate(plant.nextDue)}.`);
@@ -411,7 +456,7 @@ $("#import-input").addEventListener("change", async (e) => {
     const incoming = await readBackup(file);
     // Merge: plants with the same id are replaced, new ones are added.
     const byId = new Map(plants.map((p) => [p.id, p]));
-    for (const p of incoming) byId.set(p.id, { dampCount: 0, ...p });
+    for (const p of incoming) byId.set(p.id, p);
     plants = [...byId.values()];
     if (persist()) {
       render();

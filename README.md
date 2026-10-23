@@ -112,6 +112,8 @@ All paths in the app are relative, so it works from a `/repo-name/` subfolder wi
 - **iPhone (Safari):** tap Share, then **Add to Home Screen**.
 - **Android (Chrome):** tap ⋮, then **Install app** (or **Add to Home screen**).
 
+> **On iPhone, install it.** Safari can delete a website's saved data if you don't visit for 7 days. Apps added to the Home Screen are exempt. Either way, export a backup now and then.
+
 ### Publishing updates
 
 Edit, commit, and push. GitHub Pages redeploys automatically. Because of the offline cache, users see the new version on their **second** visit after the deploy.

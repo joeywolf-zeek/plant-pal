@@ -28,7 +28,7 @@ export const DEFAULT_CARE = {
 
 export const PLANTS = [
   // ── Aroids (Araceae) ───────────────────────────────────────────────
-  { name: "Epipremnum aureum", rank: "species", common: ["pothos", "golden pothos", "devil's ivy"], days: 7, tox: "toxic", tip: TOP_INCH + " Droopy leaves = thirsty." },
+  { name: "Epipremnum aureum", rank: "species", common: ["pothos", "golden pothos", "devil's ivy", "money plant"], days: 7, tox: "toxic", tip: TOP_INCH + " Droopy leaves = thirsty." },
   { name: "Epipremnum", rank: "genus", common: ["pothos"], days: 7, tox: "toxic", tip: TOP_INCH },
   { name: "Scindapsus pictus", rank: "species", common: ["satin pothos", "silver pothos"], days: 9, tox: "toxic", tip: HALF_DRY + " Leaves curl when thirsty." },
   { name: "Monstera deliciosa", rank: "species", common: ["monstera", "swiss cheese plant"], days: 7, tox: "toxic", tip: "Water when the top 2 inches (5 cm) are dry." },
@@ -65,10 +65,11 @@ export const PLANTS = [
   { name: "Ficus benjamina", rank: "species", common: ["weeping fig"], days: 7, tox: "toxic", tip: TOP_INCH },
   { name: "Ficus", rank: "genus", common: ["ficus", "fig"], days: 7, tox: "toxic", tip: TOP_INCH },
   { name: "Schefflera arboricola", rank: "species", common: ["umbrella plant", "dwarf umbrella tree", "schefflera"], days: 9, tox: "toxic", tip: HALF_DRY },
+  { name: "Pachira aquatica", rank: "species", common: ["money tree", "pachira"], days: 9, tox: "safe", tip: HALF_DRY },
   { name: "Strelitzia", rank: "genus", common: ["bird of paradise"], days: 8, tox: "toxic", tip: TOP_INCH },
 
   // ── Calatheas & friends (Marantaceae) ──────────────────────────────
-  { name: "Goeppertia", rank: "genus", common: ["calathea", "rattlesnake plant", "zebra plant"], days: 5, tox: "safe", tip: EVEN_MOIST + " Use filtered or rain water if leaf edges crisp." },
+  { name: "Goeppertia", rank: "genus", common: ["calathea", "rattlesnake plant"], days: 5, tox: "safe", tip: EVEN_MOIST + " Use filtered or rain water if leaf edges crisp." },
   { name: "Calathea", rank: "genus", common: ["calathea"], days: 5, tox: "safe", tip: EVEN_MOIST + " Use filtered or rain water if leaf edges crisp." },
   { name: "Maranta leuconeura", rank: "species", common: ["prayer plant"], days: 5, tox: "safe", tip: EVEN_MOIST },
   { name: "Marantaceae", rank: "family", common: [], days: 5, tox: "safe", tip: EVEN_MOIST },
@@ -104,7 +105,7 @@ export const PLANTS = [
   // ── Succulents & cacti ─────────────────────────────────────────────
   { name: "Aloe vera", rank: "species", common: ["aloe", "aloe vera"], days: 14, tox: "toxic", tip: BONE_DRY },
   { name: "Aloe", rank: "genus", common: ["aloe"], days: 14, tox: "toxic", tip: BONE_DRY },
-  { name: "Crassula ovata", rank: "species", common: ["jade plant", "jade", "money tree"], days: 14, tox: "toxic", tip: BONE_DRY + " Wrinkly leaves = thirsty." },
+  { name: "Crassula ovata", rank: "species", common: ["jade plant", "jade"], days: 14, tox: "toxic", tip: BONE_DRY + " Wrinkly leaves = thirsty." },
   { name: "Echeveria", rank: "genus", common: ["echeveria", "hens and chicks"], days: 14, tox: "safe", tip: BONE_DRY },
   { name: "Haworthiopsis", rank: "genus", common: ["zebra haworthia", "haworthia"], days: 14, tox: "safe", tip: BONE_DRY, synonyms: ["Haworthia"] },
   { name: "Sedum morganianum", rank: "species", common: ["burro's tail", "donkey's tail"], days: 14, tox: "safe", tip: BONE_DRY },

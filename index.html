@@ -10,6 +10,7 @@
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <script>
@@ -19,6 +20,13 @@
   <link rel="stylesheet" href="styles.css">
   <script src="config.js"></script>
   <script type="module" src="js/app.js"></script>
+  <!-- Fetch app.js's imports in parallel instead of discovering them one by one -->
+  <link rel="modulepreload" href="js/plants-data.js">
+  <link rel="modulepreload" href="js/schedule.js">
+  <link rel="modulepreload" href="js/storage.js">
+  <link rel="modulepreload" href="js/image.js">
+  <link rel="modulepreload" href="js/identify.js">
+  <link rel="modulepreload" href="js/ics.js">
 </head>
 <body>
   <header class="topbar">
@@ -70,16 +78,22 @@
 
       <div class="sheet-body">
         <!-- 1. Photo -->
-        <label class="photo-picker" for="photo-input">
-          <img id="photo-preview" alt="" hidden>
+        <label class="photo-picker" for="library-input">
+          <img id="photo-preview" alt="Your plant photo" hidden>
           <span id="photo-placeholder" class="photo-placeholder">
-            <span class="big" aria-hidden="true">📷</span>
-            Take or choose a photo
+            <span class="big" aria-hidden="true">🪴</span>
+            Add a photo to identify your plant
           </span>
         </label>
+        <div class="photo-buttons">
+          <label class="btn secondary" for="photo-input">📷 Take photo</label>
+          <label class="btn ghost" for="library-input">🖼 Choose photo</label>
+        </div>
+        <!-- capture= opens the camera directly; the second input lets you pick an existing photo -->
         <input id="photo-input" type="file" accept="image/*" capture="environment" class="visually-hidden">
+        <input id="library-input" type="file" accept="image/*" class="visually-hidden">
 
-        <button id="identify-btn" type="button" class="btn secondary wide" hidden>🔍 Identify this plant</button>
+        <button id="identify-btn" type="button" class="btn secondary wide" hidden>🔍 Try again</button>
         <p id="id-status" class="status" role="status" aria-live="polite"></p>
         <fieldset id="matches" class="matches" hidden>
           <legend>Best matches — pick one</legend>

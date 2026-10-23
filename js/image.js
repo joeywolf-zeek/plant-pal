@@ -30,6 +30,7 @@ export async function processPhoto(file) {
   big.height = Math.round(h * scale);
   big.getContext("2d").drawImage(img, 0, 0, big.width, big.height);
   const upload = await canvasToBlob(big, 0.85);
+  big.width = big.height = 0; // free canvas memory right away (iOS Safari has a tight canvas budget)
 
   // Square thumbnail (crop the center)
   const side = Math.min(w, h);
@@ -38,6 +39,7 @@ export async function processPhoto(file) {
   small.width = small.height = T;
   small.getContext("2d").drawImage(img, (w - side) / 2, (h - side) / 2, side, side, 0, 0, T, T);
   const thumb = small.toDataURL("image/jpeg", 0.7);
+  small.width = small.height = 0;
 
   return { upload, thumb };
 }

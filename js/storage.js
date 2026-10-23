@@ -57,11 +57,40 @@ export async function readBackup(file) {
   }
   const plants = Array.isArray(data) ? data : data?.plants;
   if (!Array.isArray(plants)) throw new Error("No plants found in that file.");
-  const valid = plants.filter(
-    (p) => p && typeof p.id === "string" && typeof p.nextDue === "string" && Number(p.baseInterval) > 0
-  );
+  const valid = plants.map(normalizePlant).filter(Boolean);
   if (!valid.length) throw new Error("No valid plants found in that file.");
   return valid;
+}
+
+const DATE = /^\d{4}-\d{2}-\d{2}$/;
+const pick = (v, allowed, fallback) => (allowed.includes(v) ? v : fallback);
+const str = (v, max = 200) => (typeof v === "string" ? v.slice(0, max) : "");
+
+/** Clean up one imported plant so a hand-edited or old backup can't break the app. Returns null if unusable. */
+function normalizePlant(p) {
+  if (!p || typeof p !== "object") return null;
+  const base = Number(p.baseInterval);
+  if (typeof p.id !== "string" || !p.id || !DATE.test(p.nextDue) || !(base > 0 && base <= 365)) return null;
+  const name = str(p.name) || str(p.nickname) || "Plant";
+  return {
+    id: p.id.slice(0, 100),
+    name,
+    scientific: str(p.scientific),
+    nickname: str(p.nickname, 40),
+    careName: str(p.careName),
+    light: pick(p.light, ["low", "medium", "bright"], "medium"),
+    pot: pick(p.pot, ["small", "medium", "large"], "medium"),
+    location: pick(p.location, ["indoors", "outdoors"], "indoors"),
+    tox: pick(p.tox, ["toxic", "mild", "safe"], null),
+    tip: str(p.tip, 500),
+    baseInterval: base,
+    lastWatered: DATE.test(p.lastWatered) ? p.lastWatered : null,
+    nextDue: p.nextDue,
+    dampCount: Number.isInteger(p.dampCount) && p.dampCount >= 0 ? p.dampCount : 0,
+    // Only accept small embedded JPEG/PNG thumbnails.
+    photo: typeof p.photo === "string" && /^data:image\/(jpeg|png);base64,/.test(p.photo) && p.photo.length < 200000 ? p.photo : null,
+    addedAt: str(p.addedAt, 40),
+  };
 }
 
 export function downloadBlob(blob, filename) {
