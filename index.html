@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Plant Pal</title>
+  <meta name="description" content="Simple plant watering reminders that live on your phone.">
+  <meta name="theme-color" content="#2f7a4f" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#14201a" media="(prefers-color-scheme: dark)">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <script>
+    // Apply the saved theme before first paint so there's no flash.
+    try { const t = localStorage.getItem("plantApp.theme"); if (t) document.documentElement.dataset.theme = t; } catch {}
+  </script>
+  <link rel="stylesheet" href="styles.css">
+  <script src="config.js"></script>
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <img src="icons/icon.svg" alt="" width="32" height="32">
+      <h1 id="app-name">Plant Pal</h1>
+    </div>
+    <button id="theme-btn" class="icon-btn" type="button" aria-label="Theme: auto" title="Switch theme">◐</button>
+  </header>
+
+  <main>
+    <details class="card tip" id="soil-tip">
+      <summary>👆 The finger test: how to tell if a plant needs water</summary>
+      <p>Push a finger into the soil up to the first knuckle (about an inch / 2–3 cm).</p>
+      <ul>
+        <li><strong>Dry</strong> and crumbly? Water thoroughly until it drains out the bottom, then tap <em>Watered</em>.</li>
+        <li><strong>Cool or damp</strong>, or soil sticks to your finger? Wait — tap <em>Still damp</em> and you'll be reminded in 2 days.</li>
+      </ul>
+      <p class="muted">Schedules are estimates. The soil is always the boss — more plants die from too much water than too little.</p>
+    </details>
+
+    <section aria-labelledby="list-heading">
+      <h2 id="list-heading" class="visually-hidden">Your plants</h2>
+      <ul id="plant-list" class="plant-list"></ul>
+      <div id="empty-state" class="empty" hidden>
+        <div class="empty-art" aria-hidden="true">🪴</div>
+        <p><strong>No plants yet.</strong></p>
+        <p class="muted">Tap <em>Add plant</em> to snap a photo and get a watering schedule.</p>
+      </div>
+    </section>
+
+    <section class="backup">
+      <button id="export-btn" class="btn ghost" type="button">Export backup</button>
+      <label class="btn ghost" for="import-input">Import backup</label>
+      <input id="import-input" type="file" accept="application/json,.json" class="visually-hidden">
+    </section>
+    <p class="footnote muted">Your plants are saved on this device only. Export a backup now and then.</p>
+  </main>
+
+  <button id="add-btn" class="fab" type="button"><span aria-hidden="true">＋</span> Add plant</button>
+
+  <!-- Add-plant sheet -->
+  <dialog id="add-dialog" aria-labelledby="add-title">
+    <form id="add-form" method="dialog" novalidate>
+      <header class="sheet-head">
+        <h2 id="add-title">Add a plant</h2>
+        <button type="button" class="icon-btn" data-close aria-label="Close">✕</button>
+      </header>
+
+      <div class="sheet-body">
+        <!-- 1. Photo -->
+        <label class="photo-picker" for="photo-input">
+          <img id="photo-preview" alt="" hidden>
+          <span id="photo-placeholder" class="photo-placeholder">
+            <span class="big" aria-hidden="true">📷</span>
+            Take or choose a photo
+          </span>
+        </label>
+        <input id="photo-input" type="file" accept="image/*" capture="environment" class="visually-hidden">
+
+        <button id="identify-btn" type="button" class="btn secondary wide" hidden>🔍 Identify this plant</button>
+        <p id="id-status" class="status" role="status" aria-live="polite"></p>
+        <fieldset id="matches" class="matches" hidden>
+          <legend>Best matches — pick one</legend>
+          <div id="match-list"></div>
+        </fieldset>
+
+        <!-- 2. Name -->
+        <label class="field">
+          <span>Plant type</span>
+          <input id="plant-name" type="text" list="plant-suggestions" autocomplete="off"
+                 placeholder="e.g. pothos, Monstera deliciosa" required>
+          <datalist id="plant-suggestions"></datalist>
+          <small class="muted">Pick a match above, or type a common or scientific name.</small>
+        </label>
+
+        <label class="field">
+          <span>Nickname <span class="muted">(optional)</span></span>
+          <input id="nickname" type="text" maxlength="40" placeholder="e.g. Kevin">
+        </label>
+
+        <!-- 3. Conditions -->
+        <fieldset class="field">
+          <legend>Light</legend>
+          <div class="segmented">
+            <label><input type="radio" name="light" value="low"><span>Low</span></label>
+            <label><input type="radio" name="light" value="medium" checked><span>Medium</span></label>
+            <label><input type="radio" name="light" value="bright"><span>Bright</span></label>
+          </div>
+        </fieldset>
+
+        <fieldset class="field">
+          <legend>Pot size</legend>
+          <div class="segmented">
+            <label><input type="radio" name="pot" value="small"><span>Small</span></label>
+            <label><input type="radio" name="pot" value="medium" checked><span>Medium</span></label>
+            <label><input type="radio" name="pot" value="large"><span>Large</span></label>
+          </div>
+        </fieldset>
+
+        <fieldset class="field">
+          <legend>Where</legend>
+          <div class="segmented">
+            <label><input type="radio" name="location" value="indoors" checked><span>Indoors</span></label>
+            <label><input type="radio" name="location" value="outdoors"><span>Outdoors</span></label>
+          </div>
+        </fieldset>
+
+        <label class="field">
+          <span>Last watered</span>
+          <input id="last-watered" type="date">
+        </label>
+
+        <!-- 4. Schedule -->
+        <div class="schedule-box">
+          <p id="care-match" class="care-match"></p>
+          <p id="breakdown" class="muted small"></p>
+          <label class="interval-row">
+            Water every
+            <input id="interval" type="number" min="1" max="90" inputmode="numeric" required>
+            days
+          </label>
+          <button id="interval-reset" type="button" class="link" hidden>Reset to suggested</button>
+        </div>
+      </div>
+
+      <footer class="sheet-foot">
+        <button type="button" class="btn ghost" data-close>Cancel</button>
+        <button type="submit" class="btn primary" id="save-btn">Save plant</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- One plant in the list (cloned by app.js) -->
+  <template id="plant-tpl">
+    <li class="plant card">
+      <div class="plant-main">
+        <div class="thumb"><img alt="" loading="lazy"><span class="thumb-fallback" aria-hidden="true">🪴</span></div>
+        <div class="plant-info">
+          <div class="plant-title-row">
+            <h3 class="plant-title"></h3>
+            <span class="badge"></span>
+          </div>
+          <p class="plant-sub muted small"></p>
+          <p class="plant-meta small"></p>
+        </div>
+      </div>
+      <details class="plant-tip small">
+        <summary>Care tip</summary>
+        <p></p>
+      </details>
+      <div class="actions">
+        <button type="button" class="btn primary" data-act="watered">💧 Watered</button>
+        <button type="button" class="btn secondary" data-act="damp">Still damp</button>
+        <button type="button" class="icon-btn" data-act="calendar" aria-label="Add to calendar" title="Add to calendar">📅</button>
+        <button type="button" class="icon-btn" data-act="remove" aria-label="Remove" title="Remove">🗑</button>
+      </div>
+      <div class="confirm" hidden>
+        <span class="confirm-text"></span>
+        <button type="button" class="btn ghost" data-act="cancel-remove">Cancel</button>
+        <button type="button" class="btn danger" data-act="confirm-remove">Remove</button>
+      </div>
+    </li>
+  </template>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+</body>
+</html>
