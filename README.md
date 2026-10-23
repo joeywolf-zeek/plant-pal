@@ -74,12 +74,17 @@ Without a key the app still works. You can add plants by typing their name, and 
 
 Your key sits in `config.js`, and anyone can read that file on a public site. To make a copied key useless elsewhere, tell Pl@ntNet which websites may use it:
 
-1. In your Pl@ntNet account **Settings**, find **Authorized domains**.
-2. Add your GitHub Pages domain, for example `yourusername.github.io`. Use just the domain: no `https://` and no path.
-3. To test on your computer, also add `localhost`. You can remove it later.
-4. Save.
+1. In your Pl@ntNet account **Settings**, tick **Expose my API key**. Browser apps need this; without it, every request from a website is rejected.
+2. Under **Authorized domains**, add one full origin per line, including the scheme. Leave out any path and any trailing slash:
+   ```
+   https://yourusername.github.io
+   http://localhost:8000
+   http://localhost
+   ```
+   The `localhost` lines let you test on your computer, and you can remove them later.
+3. Save.
 
-If identification fails with *"This website isn't authorized for the API key"*, the domain is missing from that list or spelled differently.
+If identification fails with *"This website isn't authorized for the API key"*, the origin is missing from that list or doesn't match exactly. `http` and `https` count as different origins, and so do different ports.
 
 > A domain restriction stops casual reuse, but it isn't a vault: it checks which site a request claims to come from. The worst someone could do with your key is use up your free daily quota, so keep it on the free tier with no billing attached.
 
